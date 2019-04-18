@@ -19,11 +19,6 @@
 (defun whitespace(str)
   (and str (find str '(#\Return #\Space #\Tab #\Newline #\Vt) :test #'char=)))
 
-
-
-
-
-
 (defun analiz-symbol(stream symbol row col)
   (cond
     ((whitespace symbol)
@@ -42,9 +37,7 @@
 			   (+ cur-col 1))))
 	  ((not (whitespace sym))(list sym nil cur-row cur-col))))
     
-    
     ((delimeter symbol) (list (read-char stream nil) (list 'delimeter (stay (delimeter symbol) row col)) row (+ 1 col)))
-    
     ((digit-char-p symbol)
      (do* ((sym(read-char stream nil) (read-char stream nil))
 	   (buf (list sym symbol) (cons sym buf)))
@@ -71,6 +64,8 @@
 						   (stay token row col))
 					     row
 					     (+ col (1- (length buf))))))))
+    
+     
     
     ((eq symbol #\.)
      (let ((next (read-char stream nil)))
