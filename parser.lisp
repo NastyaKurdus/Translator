@@ -77,11 +77,13 @@
   (labels ((%declaration-list ()
 	     (let ((ts (scan)))
 	       (if (is-correct-lexem ts 'keyword 'BEGIN)
-		   (unscan ts)
+		   (prog2
+		       (unscan ts)
+		       (list 'declaration-list 'empty))
 		   (let ((declaration (<declaration> ts)))
 		     (when declaration
-		       (cons declaration (%declaration-list))))))))
-    (cons 'declaration-list (%declaration-list))))
+		       (list 'declaration-list declaration (%declaration-list))))))))
+    (%declaration-list)))
 
 (defun <statements-list>()
   (list 'statements-list))
@@ -89,7 +91,7 @@
 (defun <declaration>(ts)
   (let ((variable-identifier (<variable-identifier> ts)))
     (when variable-identifier
-      (let ((identifier-list (<identifier-list> variable-identifier)))
+      (let ((identifier-list (<identifier-list>)))
 	(when identifier-list
 	  (let ((colon (scan)))
 	    (if (is-correct-lexem colon 'delimeter 'COLON)
@@ -98,7 +100,12 @@
 		    (let ((attr-list (<attribute-list>))
 			  (semi (scan)))
 		      (if (is-correct-lexem semi 'delimeter 'semicolon)
-			  (list 'declaration identifier-list 'colon attribute attr-list)
+			  (list 'declaration
+				variable-identifier
+				identifier-list
+				'colon
+				attribute
+				attr-list)
 			  (warn "Expected ; at line ~S,column ~S."
 				(token-row (second semi))
 				(token-col (second semi)))))))
@@ -106,15 +113,17 @@
 		      (token-row (second colon))
 		      (token-col (second colon))))))))))
 
-(defun <identifier-list> (variable-identifier)
-  (labels ((%identifier-list()
+(defun <identifier-list> ()
+  (labels ((%identifier-list ()
 	     (let ((ts (scan)))
 	       (if (is-correct-lexem ts 'delimeter 'comma)
 		   (let ((variable-identifier (<variable-identifier> (scan))))
 		     (when variable-identifier
-		       (cons variable-identifier (%identifier-list))))
-		   (unscan ts)))))
-    (cons 'identifier-list (cons variable-identifier (%identifier-list)))))
+		       (list 'identifier-list 'comma variable-identifier (%identifier-list))))
+		   (prog2
+		       (unscan ts)
+		       (list 'identifier-list 'empty))))))
+    (%identifier-list)))
 
 (defun <attribute-list>()
   (labels ((%attribute-list()
@@ -160,8 +169,7 @@
 	       (if (is-correct-lexem ts 'delimeter 'comma)
 		   (let ((range (<range> (scan))))
 		     (when range
-		       (cons 'range-list
-			     (list 'comma range (%range-list)))))
+		       (list 'range-list 'comma range (%range-list))))
 		   (prog2
 		       (unscan ts)
 		       (list 'range-list 'empty))))))
