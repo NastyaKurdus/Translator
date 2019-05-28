@@ -79,10 +79,12 @@
 	       (if (is-correct-lexem ts 'keyword 'BEGIN)
 		   (prog2
 		       (unscan ts)
-		       (list 'declaration-list 'empty))
+		       (list 'declaration-list))
 		   (let ((declaration (<declaration> ts)))
 		     (when declaration
-		       (list 'declaration-list declaration (%declaration-list))))))))
+		       (list 'declaration-list
+			     declaration
+			     (%declaration-list))))))))
     (%declaration-list)))
 
 (defun <statements-list>()
@@ -91,10 +93,9 @@
 (defun <declaration>(ts)
   (let ((variable-identifier (<variable-identifier> ts)))
     (when variable-identifier
-      (let ((identifier-list (<identifier-list>)))
-	(when identifier-list
-	  (let ((colon (scan)))
-	    (if (is-correct-lexem colon 'delimeter 'COLON)
+      (let ((identifier-list (<identifier-list>))
+	    (colon (scan)))
+	(if (is-correct-lexem colon 'delimeter 'COLON)
 		(let ((attribute (<attribute> (scan))))
 		  (when attribute
 		    (let ((attr-list (<attribute-list>))
@@ -111,7 +112,7 @@
 				(token-col (second semi)))))))
 		(warn "Expected : at line ~S,column ~S."
 		      (token-row (second colon))
-		      (token-col (second colon))))))))))
+		      (token-col (second colon))))))))
 
 (defun <identifier-list> ()
   (labels ((%identifier-list ()
@@ -119,10 +120,13 @@
 	       (if (is-correct-lexem ts 'delimeter 'comma)
 		   (let ((variable-identifier (<variable-identifier> (scan))))
 		     (when variable-identifier
-		       (list 'identifier-list 'comma variable-identifier (%identifier-list))))
+		       (list 'identifier-list
+			     'comma
+			     variable-identifier
+			     (%identifier-list))))
 		   (prog2
 		       (unscan ts)
-		       (list 'identifier-list 'empty))))))
+		       (list 'identifier-list))))))
     (%identifier-list)))
 
 (defun <attribute-list>()
@@ -131,11 +135,12 @@
 	       (if (is-correct-lexem ts 'delimeter 'semicolon)
 		   (prog2
 		       (unscan ts)
-		       (list '<attribute-list> '<empty>))
+		       (list 'attribute-list))
 		   (let ((attribute (<attribute> ts)))
 		     (when attribute
-		       (cons '<attribute-list>
-			     (list attribute (%attribute-list)))))))))
+		       (list 'attribute-list
+			     attribute
+			     (%attribute-list))))))))
     (%attribute-list)))
 
 (defun <attribute>(ts)
@@ -152,12 +157,11 @@
        (when range
 	 (let ((range-list (<range-list>))
 	       (ts1 (is-correct-lexem (scan) 'delimeter 'rightpar)))
-	   (when range-list
-	     (if ts1
-		 (list 'attribute 'leftpar range range-list 'rightpar)
-		 (warn "Expected ] at line ~S, column ~S."
-		       (token-row (second ts))
-		       (token-col (second ts)))))))))
+	   (if ts1
+	       (list 'attribute 'leftpar range range-list 'rightpar)
+	       (warn "Expected ] at line ~S, column ~S."
+		     (token-row (second ts))
+		     (token-col (second ts))))))))
     (t (warn "Expected [ or one of these: 'SIGNAL' or 'COMPLEX' ... at line ~S,column ~S."
 	     (token-row (second ts))
 	     (token-col (second ts))))))
@@ -172,7 +176,7 @@
 		       (list 'range-list 'comma range (%range-list))))
 		   (prog2
 		       (unscan ts)
-		       (list 'range-list 'empty))))))
+		       (list 'range-list))))))
     (%range-list)))
 
 (defun <range> (ts)
